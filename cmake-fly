@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+cmake-orign $@
+if [ -f Makefile ]; 
+then
+    flymake-it
+fi
+   
+   

@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+import os
+import os.path as fs
+import fnmatch
+
+def is_proj_dir(dir):
+    return fs.exists(fs.join(dir, 'Makefile'))
+
+def find_proj_base_dir(base_dir):
+    current_dir = base_dir
+
+    while True:
+        up_dir = os.path.realpath(fs.join(current_dir, os.pardir))
+        if is_proj_dir(up_dir):
+            current_dir = up_dir
+        else:
+            break;
+
+    return current_dir
+
+def has_check_syntax(makefile):
+    has_cs = False
+    try:
+        file = open(makefile, 'r')
+        for line in file:
+            if line.find('check-syntax') >= 0:
+                has_cs = True
+                break
+    except IOError, msg:
+        print(msg)
+
+    return has_cs
+
+def append_makefile(dir, cxx_flags, cxx_degines):
+    makefile = fs.join(dir, 'Makefile')
+
+    if not has_check_syntax(makefile):
+        make_entry_str = """check-syntax:
+\tc++ -o /dev/null %s %s -S ${CHK_SOURCES}
+.PHONY: check-syntax
+""" % (cxx_flags, cxx_degines)
+        make_compl_str = """check-completions:
+\tclang -cc1 -fsyntax-only %s %s -code-completion-at ${COMPLETE_POINT} ${COMPLETE_SOURCES}
+.PHONY: check-completions
+""" % (cxx_flags, cxx_degines)
+        try:
+            file = open(makefile, 'a')
+            file.write(make_entry_str)
+            file.write(make_compl_str)
+            file.close()
+        except IOError, msg:
+            print(msg)
+
+def extract_flags(flag_file):
+    cxx_flags = ""
+    cxx_defines = ""
+
+    try:
+        file = open(flag_file, 'r')
+        for line in file:
+            if line.find('CXX_FLAGS') >= 0:
+                cxx_flags = line[:-1].split('=')[1]
+            elif line.find('CXX_DEFINES') >= 0:
+                cxx_defines = line[:-1].split('=')[1]
+
+    except IOError:
+        pass
+    except Exception:
+        pass
+
+    return (cxx_flags, cxx_defines)
+
+def collect_flags(cmakefiles_dir):
+    cxx_flags = ""
+    cxx_defines = ""
+
+    dot_dirs = os.listdir(cmakefiles_dir)
+    for d in dot_dirs:
+        if fnmatch.fnmatch(d, '*.dir'):
+            cflags, cdefs = extract_flags(fs.join(cmakefiles_dir, d, 'flags.make'))
+            cxx_flags += ' ' + cflags
+            cxx_defines += ' ' + cdefs
+
+    return cxx_flags, cxx_defines
+
+def append_proj_makefiles(base_dir):
+    for path, dirs, files in os.walk(base_dir):
+        if is_proj_dir(path):
+            cxx_flags = ""
+            cxx_defines = ""
+
+            for dir in dirs:
+                if dir == 'CMakeFiles':
+                    dirs.remove(dir)
+                    cxx_flags, cxx_defines = collect_flags(fs.join(path, dir))
+
+            append_makefile(path, cxx_flags, cxx_defines)
+
+def flymake_dir(current_dir):
+    if is_proj_dir(current_dir):
+        base_dir = find_proj_base_dir(current_dir)
+        append_proj_makefiles(base_dir)
+
+if __name__ == '__main__':
+    flymake_dir(fs.realpath('.'))
