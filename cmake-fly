@@ -1,5 +1,6 @@
-#!/usr/bin/env sh
-
+#!/usr/bin/env bash
+echo `pwd`
+echo $@
 cmake-orign $@
 if [ -f Makefile ]; 
 then

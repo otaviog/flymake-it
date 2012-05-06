@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -10,7 +11,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#!/usr/bin/env python
 
 import os
 import os.path as fs
@@ -68,13 +68,19 @@ def extract_flags(flag_file):
     cxx_flags = ""
     cxx_defines = ""
 
+    def get_right_from_assign_expr(eq_expr):
+        eq_pos = eq_expr.find('=')
+        if eq_pos >= 0:
+            return eq_expr[eq_pos + 1:-1]
+        return ""
+
     try:
         file = open(flag_file, 'r')
         for line in file:
             if line.find('CXX_FLAGS') >= 0:
-                cxx_flags = line[:-1].split('=')[1]
+                cxx_flags = get_right_from_assign_expr(line)
             elif line.find('CXX_DEFINES') >= 0:
-                cxx_defines = line[:-1].split('=')[1]
+                cxx_defines = get_right_from_assign_expr(line)
 
     except IOError:
         pass
