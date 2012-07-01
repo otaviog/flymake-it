@@ -7,9 +7,4 @@ $flymake-it
 
 Now every Makefile (including the subdirs) will have a syntax-check rule.
 
-It's also include the scripts cmake-fly and ccmake-fly to make the job easier,
-those scripts just call cmake and then flymake-it. To use them is need to
-backup the cmake originals executables as on the system path:
-cmake to cmake-origin
-and
-ccmake to ccmake-origin
+Note: the cmake and cmake-origin doesn't work with anymore.
